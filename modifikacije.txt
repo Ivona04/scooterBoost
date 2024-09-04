@@ -1,0 +1,21 @@
+Auspuh,Auspuh Standard,10.0
+Auspuh,Auspuh Sportski,15.0
+Auspuh,Auspuh Racing,20.0
+Klip,Klip Standard,15.0
+Klip,Klip Sportski,25.0
+Klip,Klip Racing,35.0
+Filter,Filter Standard,12.0
+Filter,Filter Sportski,18.0
+Filter,Filter Racing,22.0
+Karburator,Karburator Standard,14.0
+Karburator,Karburator Sportski,20.0
+Karburator,Karburator Racing,25.0
+Prigusivac,Prigusivac Standard,8.0
+Prigusivac,Prigusivac Sportski,12.0
+Prigusivac,Prigusivac Racing,16.0
+Izmjena paljenja,Paljenje Standard,15.0
+Izmjena paljenja,Paljenje Sportski,20.0
+Izmjena paljenja,Paljenje Racing,25.0
+Remen,Remen Standard,10.0
+Remen,Remen Sportski,15.0
+Remen,Remen Racing,20.0
