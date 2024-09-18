@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "functions.h"
-
 #include <string.h>
 
 #define MAX_KATEGORIJA 10
@@ -30,12 +29,12 @@ void unosPodatakaOMotoru(Motor* motor, int id) {
 
         if (uneseniBroj == 0) break;
 
-        if (uneseniBroj < 1 || uneseniBroj > sizeof(kategorije)/50) {
+        if (uneseniBroj < 1 || uneseniBroj > brojKategorija) {
             printf("Nepoznata kategorija. Molimo unesite broj.\n");
             continue;
         }
 
-        prikaziOpcijeModifikacija(kategorije[uneseniBroj-1]);
+        prikaziOpcijeModifikacija(kategorije[uneseniBroj - 1]);
 
         int opcija;
         printf("\nOdaberite opciju modifikacije: ");
@@ -50,8 +49,8 @@ void unosPodatakaOMotoru(Motor* motor, int id) {
         // Pretraži i dodaj ili ažuriraj modifikaciju
         int modFound = 0;
         for (int i = 0; i < motor->brojModifikacija; i++) {
-            printf("%s, %s", motor->modifikacije[i].kategorija, kategorije[uneseniBroj-1] );
-            if (strcmp(motor->modifikacije[i].kategorija, kategorije[uneseniBroj-1]) == 0) {
+            printf("%s, %s", motor->modifikacije[i].kategorija, kategorije[uneseniBroj - 1]);
+            if (strcmp(motor->modifikacije[i].kategorija, kategorije[uneseniBroj - 1]) == 0) {
                 // Ažuriraj postojeću modifikaciju
                 motor->modifikacije[i].postotakPovecanja = predefiniraneModifikacije[opcija - 1].postotakPovecanja;
                 modFound = 1;
@@ -60,22 +59,23 @@ void unosPodatakaOMotoru(Motor* motor, int id) {
         }
         if (!modFound && motor->brojModifikacija < MAX_MODIFIKACIJA) {
             // Dodaj novu modifikaciju
-            strcpy(motor->modifikacije[motor->brojModifikacija].naziv, predefiniraneModifikacije[(uneseniBroj-1)*3+opcija-1].naziv);
-            strcpy(motor->modifikacije[motor->brojModifikacija].kategorija, predefiniraneModifikacije[(uneseniBroj-1)*3+opcija-1].kategorija);
-            motor->modifikacije[motor->brojModifikacija].postotakPovecanja = predefiniraneModifikacije[(uneseniBroj-1)*3+opcija-1].postotakPovecanja;
+            strcpy(motor->modifikacije[motor->brojModifikacija].naziv, predefiniraneModifikacije[(uneseniBroj - 1) * 3 + opcija - 1].naziv);
+            strcpy(motor->modifikacije[motor->brojModifikacija].kategorija, predefiniraneModifikacije[(uneseniBroj - 1) * 3 + opcija - 1].kategorija);
+            motor->modifikacije[motor->brojModifikacija].postotakPovecanja = predefiniraneModifikacije[(uneseniBroj - 1) * 3 + opcija - 1].postotakPovecanja;
 
             motor->brojModifikacija++;
         }
     }
 }
 
-
 Status dodajMotor(Motor* motori, int* brojMotora) {
     if (*brojMotora < MAX_MOTORA) {
         unosPodatakaOMotoru(&motori[*brojMotora], *brojMotora + 1);
         (*brojMotora)++;
+        spremiMotoreUDatoteku("motori.txt", motori, *brojMotora);
         return USPJEH;
-    } else {
+    }
+    else {
         printf("Dostignut je maksimalan broj motora.\n");
         return NEUSPJEH;
     }
@@ -100,6 +100,7 @@ Status azurirajMotor(Motor* motori, int brojMotora, int id) {
         if (motori[i].motorId == id) {
             printf("Azuriranje motora ID: %d\n", id);
             unosPodatakaOMotoru(&motori[i], id);
+            spremiMotoreUDatoteku("motori.txt", motori, brojMotora);
             return USPJEH;
         }
     }
@@ -114,6 +115,7 @@ Status obrisiMotor(Motor* motori, int* brojMotora, int id) {
                 motori[j] = motori[j + 1];
             }
             (*brojMotora)--;
+            spremiMotoreUDatoteku("motori.txt", motori, *brojMotora);
             printf("Motor s ID: %d je obrisan.\n", id);
             return USPJEH;
         }
@@ -125,7 +127,7 @@ Status obrisiMotor(Motor* motori, int* brojMotora, int id) {
 float izracunajSnagu(const Motor motor) {
     float ukupnaSnaga = motor.osnovnaSnaga;
     for (int i = 0; i < motor.brojModifikacija; i++) {
-        ukupnaSnaga += (ukupnaSnaga * motor.modifikacije[i].postotakPovecanja / 100);
+        ukupnaSnaga += izracunajPostotak(ukupnaSnaga, motor.modifikacije[i].postotakPovecanja);
     }
     return ukupnaSnaga;
 }
@@ -177,7 +179,68 @@ void prikaziOpcijeModifikacija(const char* kategorija) {
     int i = 1;
     for (int j = 0; j < MAX_MODIFIKACIJA_TYP; j++) {
         if (strcmp(predefiniraneModifikacije[j].kategorija, kategorija) == 0) {
-            printf("%d. %s - Povecanje snage: %.2f%%\n", i++, predefiniraneModifikacije[j].naziv, predefiniraneModifikacije[j].postotakPovecanja);
+            printf("%d. %s (Povecanje: %.2f%%)\n", i++, predefiniraneModifikacije[j].naziv, predefiniraneModifikacije[j].postotakPovecanja);
         }
     }
+}
+
+void spremiMotoreUDatoteku(const char* imeDatoteke, Motor* motori, int brojMotora) {
+    FILE* datoteka = fopen(imeDatoteke, "w");
+    if (datoteka == NULL) {
+        printf("Ne mogu otvoriti datoteku za spremanje.\n");
+        return;
+    }
+
+    for (int i = 0; i < brojMotora; i++) {
+        fprintf(datoteka, "%d,%.2f\n", motori[i].motorId, motori[i].osnovnaSnaga);
+        for (int j = 0; j < motori[i].brojModifikacija; j++) {
+            fprintf(datoteka, "%s,%s,%.2f\n", motori[i].modifikacije[j].kategorija, motori[i].modifikacije[j].naziv, motori[i].modifikacije[j].postotakPovecanja);
+        }
+    }
+
+    fclose(datoteka);
+}
+
+int ucitajMotoreIzDatoteke(const char* imeDatoteke, Motor* motori, int* brojMotora) {
+    FILE* datoteka = fopen(imeDatoteke, "r");
+    if (datoteka == NULL) {
+        printf("Ne mogu otvoriti datoteku za ucitavanje.\n");
+        return 0;
+    }
+
+    int id;
+    float snaga;
+    while (fscanf(datoteka, "%d,%f\n", &id, &snaga) == 2) {
+        motori[*brojMotora].motorId = id;
+        motori[*brojMotora].osnovnaSnaga = snaga;
+        motori[*brojMotora].brojModifikacija = 0;
+        (*brojMotora)++;
+    }
+
+    fclose(datoteka);
+    return *brojMotora;
+}
+
+// Funkcija za usporedbu motora (za qsort)
+int usporedbaMotora(const void* a, const void* b) {
+    Motor* motorA = (Motor*)a;
+    Motor* motorB = (Motor*)b;
+    return (motorA->osnovnaSnaga > motorB->osnovnaSnaga) - (motorA->osnovnaSnaga < motorB->osnovnaSnaga);
+}
+
+// Funkcija za pretraživanje motora po ID-u (za bsearch)
+int usporedbaId(const void* a, const void* b) {
+    int idA = *(int*)a;
+    Motor* motorB = (Motor*)b;
+    return (idA - motorB->motorId);
+}
+
+// Funkcija za sortiranje motora
+void sortirajMotore(Motor* motori, int brojMotora) {
+    qsort(motori, brojMotora, sizeof(Motor), usporedbaMotora);
+}
+
+// Funkcija za pretraživanje motora po ID-u
+Motor* pronadiMotor(Motor* motori, int brojMotora, int id) {
+    return (Motor*)bsearch(&id, motori, brojMotora, sizeof(Motor), usporedbaId);
 }
